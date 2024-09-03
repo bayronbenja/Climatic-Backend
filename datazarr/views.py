@@ -63,20 +63,17 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
     try:
         if (timeInitial):
             if (levelInitial):
-                data = era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
+                return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
                                                longitude=slice(longitudeInitial,longitudeFinal),
                                                time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial),
                                                level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))].values.tolist()
-                return data
             else:
-                data = era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
+                return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
                                                longitude=slice(longitudeInitial,longitudeFinal),
                                                time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))].values.tolist()
-                return data
         else:
-            data = era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
+            return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
                                                longitude=slice(longitudeInitial,longitudeFinal))].values.tolist()
-            return data
     except:
         return "error"
 
