@@ -7,4 +7,4 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-print(era5['10m_u_component_of_wind'])
+print(era5.variables)
