@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 import xarray
 import matplotlib.pyplot as plt
+import numpy as np
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -60,8 +61,8 @@ def ObtenerLevel(time: str):
     return levelInitial, levelFinal
 
 def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
-    try:
-        if (timeInitial):
+    '''
+    if (timeInitial):
             if (levelInitial):
                 return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
                                                longitude=slice(longitudeInitial,longitudeFinal),
@@ -74,42 +75,51 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
         else:
             return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
                                                longitude=slice(longitudeInitial,longitudeFinal))].values.tolist()
-    except:
-        return "error"
-
-def GenerarJSON(data, units:str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
+    '''
+    
     try:
         if (timeInitial):
             if (levelInitial):
-                json = {'coords': {'latitudeInitial':latitudeInitial, 
-                                'latitudeFinal':latitudeFinal, 
-                                'longitudeInitial':longitudeInitial, 
-                                'longitudeFinal':longitudeFinal},
-                        'time': {'timeInitial': timeInitial,
-                                 'timeFinal':timeFinal},
-                        'level': {'levelInitial': levelInitial,
-                                  'levelFinal':levelFinal},
-                        'data': data,
-                        'units': units}
-                return json
+                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
+                levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                          longitude=slice(longitudeInitial,longitudeFinal))
+                
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, coordChunk.time.values, coordChunk.level.values]
             else:
-                json = {'coords': {'latitudeInitial':latitudeInitial, 
-                                'latitudeFinal':latitudeFinal, 
-                                'longitudeInitial':longitudeInitial, 
-                                'longitudeFinal':longitudeFinal},
-                        'time': {'timeInitial': timeInitial,
-                                 'timeFinal':timeFinal},
-                        'data': data,
-                        'units': units}
-                return json
+                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
+                coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                          longitude=slice(longitudeInitial,longitudeFinal))
+                
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, coordChunk.time.values]
         else:
-            json = {'coords': {'latitudeInitial':latitudeInitial, 
-                                'latitudeFinal':latitudeFinal, 
-                                'longitudeInitial':longitudeInitial, 
-                                'longitudeFinal':longitudeFinal},
-                    'data': data,
+            coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                          longitude=slice(longitudeInitial,longitudeFinal))
+            
+            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values]
+    except:
+        return "error"
+
+def GenerarJSON(data, units:str):
+    try:
+        if (len(data) == 5):
+            return {'latitude': data[0].tolist(),
+                    'longitude':data[1].tolist(),
+                    'time': np.datetime_as_string(data[3]).tolist(),
+                    'level': data[4].tolist(),
+                    'data': data[2].tolist(),
                     'units': units}
-            return json
+        elif (len(data) == 4):
+            return {'latitude':data[0].tolist(),
+                    'longitude':data[1].tolist(),
+                    'time': np.datetime_as_string(data[3]).tolist(),
+                    'data': data[2].tolist(),
+                    'units': units}
+        else:
+            return {'latitude':data[0].tolist(),
+                    'longitude':data[1].tolist(),
+                    'data': data[2].tolist(),
+                    'units': units}
     except:
         return "error"
         
@@ -146,7 +156,7 @@ def GenerarRespuesta(variable: str,unit: str,latitude: str, longitude: str, time
     
     data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal)
     
-    response = GenerarJSON(data,unit, latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal)
+    response = GenerarJSON(data,unit)
 
     errorCheck = VerificarError(data,response,latitudeInitial, longitudeInitial, timeInitial, levelInitial)
     if (errorCheck != 1):
