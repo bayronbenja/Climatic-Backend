@@ -61,22 +61,6 @@ def ObtenerLevel(time: str):
     return levelInitial, levelFinal
 
 def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
-    '''
-    if (timeInitial):
-            if (levelInitial):
-                return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
-                                               longitude=slice(longitudeInitial,longitudeFinal),
-                                               time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial),
-                                               level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))].values.tolist()
-            else:
-                return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
-                                               longitude=slice(longitudeInitial,longitudeFinal),
-                                               time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))].values.tolist()
-        else:
-            return era5[variable].loc[dict(latitude=slice(latitudeInitial,latitudeFinal),
-                                               longitude=slice(longitudeInitial,longitudeFinal))].values.tolist()
-    '''
-    
     try:
         if (timeInitial):
             if (levelInitial):
