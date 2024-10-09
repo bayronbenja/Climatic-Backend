@@ -11,5 +11,8 @@ era5 = xarray.open_zarr(
 #val = era5['temperature'].sel(time=(slice("2021-12-31T21:00:00","2021-12-31T23:00:00"))).time
 #print(np.datetime_as_string(val).tolist())
 
-print(era5['temperature'].values.min())
-print(era5['temperature'].values.max())
+print("mostrando gráfico")
+era5['2m_temperature'].sel(time='2021-12-31T21:00:00').plot()
+plt.show()
+print('generado')
+plt.savefig("Tomate.jpg")

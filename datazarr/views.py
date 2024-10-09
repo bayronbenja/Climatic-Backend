@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+import io
+import base64
 import xarray
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +11,16 @@ era5 = xarray.open_zarr(
     chunks={'time': 48},
     consolidated=True,
 )
+
+def ObtenerGraficoCalor(dataArray):
+    dataArray.plot()
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    
+    image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+    
+    return image_base64
 
 def ObtenerCoord(coord: str):
     coordendas = coord.split(',')
@@ -69,39 +81,43 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                 coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
                 
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, coordChunk.time.values, coordChunk.level.values]
+
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) ,coordChunk.time.values, coordChunk.level.values ]
             else:
                 timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
                 coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
                 
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, coordChunk.time.values]
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk),coordChunk.time.values]
         else:
             coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
             
-            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values]
+            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk)]
     except:
         return "error"
 
 def GenerarJSON(data, units:str):
     try:
-        if (len(data) == 5):
+        if (len(data) == 6):
             return {'latitude': data[0].tolist(),
                     'longitude':data[1].tolist(),
-                    'time': np.datetime_as_string(data[3]).tolist(),
-                    'level': data[4].tolist(),
+                    'image': data[3],
+                    'time': np.datetime_as_string(data[4]).tolist(),
+                    'level': data[5].tolist(),
                     'data': data[2].tolist(),
                     'units': units}
-        elif (len(data) == 4):
+        elif (len(data) == 5):
             return {'latitude':data[0].tolist(),
                     'longitude':data[1].tolist(),
-                    'time': np.datetime_as_string(data[3]).tolist(),
+                    'image': data[3],
+                    'time': np.datetime_as_string(data[4]).tolist(),
                     'data': data[2].tolist(),
                     'units': units}
         else:
             return {'latitude':data[0].tolist(),
                     'longitude':data[1].tolist(),
+                    'image': data[3],
                     'data': data[2].tolist(),
                     'units': units}
     except:
@@ -149,8 +165,36 @@ def GenerarRespuesta(variable: str,unit: str,latitude: str, longitude: str, time
         return response
 
 # Create your views here.
-def Home(request):
-    return JsonResponse({})
+def Info(request):
+    latitude = era5.latitude.values.tolist()
+    longitude = era5.longitude.values.tolist()
+    time = np.datetime_as_string(era5.time.values).tolist()
+    level = era5.level.values.tolist()
+    
+    response = {
+        "Desc": "Data from ERA5",
+        "Latitud": {
+            "Min": latitude[0],
+            "Max": latitude[-1],
+            "Increment": ".25",
+            "Values": latitude},
+        "Longitude": {
+            "Min": longitude[0],
+            "Max": longitude[-1],
+            "Increment": ".25",
+            "Values": longitude},
+        "Time": {
+            "Min": time[0],
+            "Max": time[-1],
+            "Increment": "Hour",
+            "Values": time}, 
+        "level": {
+            "Min": level[0],
+            "Max": level[-1],
+            "Increment": "No pattern",
+            "Values": level}, 
+    }
+    return JsonResponse(response)
 
 def u10(request,latitude: str, longitude: str, time: str):
     '''

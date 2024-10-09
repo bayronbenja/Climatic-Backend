@@ -3,7 +3,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.Home),
+    path('info', views.Info),
     path('u10/<str:latitude>/<str:longitude>/<str:time>', views.u10),
     path('v10/<str:latitude>/<str:longitude>/<str:time>', views.v10),
     path('t2m/<str:latitude>/<str:longitude>/<str:time>', views.t2m),
@@ -11,7 +11,6 @@ urlpatterns = [
     path('isor/<str:latitude>/<str:longitude>', views.isor),
     path('z/<str:latitude>/<str:longitude>/<str:time>/<str:level>', views.z),
     path('z_surface/<str:latitude>/<str:longitude>', views.z_surface),
-    path('z/<str:latitude>/<str:longitude>/<str:time>/<str:level>', views.z),
     path('cvh/<str:latitude>/<str:longitude>', views.cvh),
     path('cl/<str:latitude>/<str:longitude>', views.cl),
     path('lsm/<str:latitude>/<str:longitude>', views.lsm),
