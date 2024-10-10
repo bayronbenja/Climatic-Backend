@@ -13,6 +13,7 @@ era5 = xarray.open_zarr(
 )
 
 def ObtenerGraficoCalor(dataArray):
+    plt.clf()
     dataArray.plot()
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
@@ -72,7 +73,7 @@ def ObtenerLevel(time: str):
     
     return levelInitial, levelFinal
 
-def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
+def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float,image:bool, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
     try:
         if (timeInitial):
             if (levelInitial):
@@ -82,18 +83,18 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                                           longitude=slice(longitudeInitial,longitudeFinal))
                 
 
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) ,coordChunk.time.values, coordChunk.level.values ]
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) if image else "" ,coordChunk.time.values, coordChunk.level.values ]
             else:
                 timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
                 coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
                 
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk),coordChunk.time.values]
+                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) if image else "" ,coordChunk.time.values]
         else:
             coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
             
-            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk)]
+            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) if image else "" ]
     except:
         return "error"
 
@@ -140,7 +141,7 @@ def VerificarError(data: str | list, json: str | dict[str,any],latitude: str | f
             return {"Mensaje del Servidor": "Ocurrió un error al procesar el nivel"}
     return 1
         
-def GenerarRespuesta(variable: str,unit: str,latitude: str, longitude: str, time: str = None, level: str = None):
+def GenerarRespuesta(variable: str,unit: str,latitude: str, longitude: str,image: str, time: str = None, level: str = None):
     '''
     Función que genera una respuesta JSON extrayendo datos del ERA5.
     '''
@@ -154,7 +155,13 @@ def GenerarRespuesta(variable: str,unit: str,latitude: str, longitude: str, time
     if (level):
         levelInitial, levelFinal = ObtenerLevel(level)
     
-    data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal)
+    isImage = False
+        
+    if (image == "true" or image == "True"):
+        isImage = True
+    
+    
+    data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,isImage, timeInitial, timeFinal, levelInitial, levelFinal)
     
     response = GenerarJSON(data,unit)
 
@@ -196,50 +203,50 @@ def Info(request):
     }
     return JsonResponse(response)
 
-def u10(request,latitude: str, longitude: str, time: str):
+def u10(request,image:str,latitude: str, longitude: str, time: str):
     '''
     Componente U (este-oeste) del viento a 10 metros sobre la superficie
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final  
     '''
-    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','m / s',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','m / s',latitude,longitude,image,time))
 
-def v10(request,latitude: str, longitude: str, time: str):
+def v10(request,image:str,latitude: str, longitude: str, time: str):
     '''
     Componente V (norte-sur) del viento a 10 metros sobre la superficie
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final  
     '''
-    return JsonResponse(GenerarRespuesta('10m_v_component_of_wind','m / s',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('10m_v_component_of_wind','m / s',latitude,longitude,image,time))
 
-def t2m(request,latitude: str, longitude: str, time:str):
+def t2m(request,image:str,latitude: str, longitude: str, time:str):
     '''
     Indica la temperatura a 2 metros sobre la superficie
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('2m_temperature','K',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('2m_temperature','K',latitude,longitude,image,time))
         
-def anor(request,latitude: str, longitude: str):
+def anor(request,image:str,latitude: str, longitude: str):
     '''
     Ángulo de la orografía a escala subcuadrícula
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('angle_of_sub_gridscale_orography','radians',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('angle_of_sub_gridscale_orography','radians',latitude,longitude,image))
 
-def isor(request,latitude: str, longitude: str):
+def isor(request,image:str,latitude: str, longitude: str):
     '''
     Describe la anisotropía de la orografía a escala subcuadrícula.
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('anisotropy_of_sub_gridscale_orography','not specified',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('anisotropy_of_sub_gridscale_orography','not specified',latitude,longitude,image))
 
-def z(request,latitude: str, longitude: str, time:str, level:str):
+def z(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Indica el geopotencial, una magnitud física que combina la altura y la gravedad.
     latitude: Arreglo con pares inicio-fin
@@ -247,93 +254,93 @@ def z(request,latitude: str, longitude: str, time:str, level:str):
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('geopotential','m**2 / s**2',latitude,longitude,time, level))
+    return JsonResponse(GenerarRespuesta('geopotential','m**2 / s**2',latitude,longitude,image,time, level))
 
-def z_surface(request,latitude: str, longitude: str):
+def z_surface(request,image:str,latitude: str, longitude: str):
     '''
     Describe el geopotencial en la superficie.
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('geopotential_at_surface','m**2 / s**2',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('geopotential_at_surface','m**2 / s**2',latitude,longitude,image))
 
-def cvh(request,latitude: str, longitude: str):
+def cvh(request,image:str,latitude: str, longitude: str):
     '''
     Indica la cobertura de vegetación alta
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('high_vegetation_cover','(0 - 1)',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('high_vegetation_cover','(0 - 1)',latitude,longitude,image))
 
-def cl(request,latitude: str, longitude: str):
+def cl(request,image:str,latitude: str, longitude: str):
     '''
     Describe la cobertura de lagos
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('lake_cover','(0 - 1)',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('lake_cover','(0 - 1)',latitude,longitude,image))
 
-def lsm(request,latitude: str, longitude: str):
+def lsm(request,image:str,latitude: str, longitude: str):
     '''
     Es una máscara que diferencia tierra y mar
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('land_sea_mask','(0 - 1)',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('land_sea_mask','(0 - 1)',latitude,longitude,image))
 
-def cvl(request,latitude: str, longitude: str):
+def cvl(request,image:str,latitude: str, longitude: str):
     '''
     Describe la cobertura de vegetación baja
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('low_vegetation_cover','(0 - 1)',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('low_vegetation_cover','(0 - 1)',latitude,longitude,image))
 
-def msl(request,latitude: str, longitude: str, time:str):
+def msl(request,image:str,latitude: str, longitude: str, time:str):
     '''
     Es la presión media al nivel del mar
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('mean_sea_level_pressure','Pa',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('mean_sea_level_pressure','Pa',latitude,longitude,image,time))
 
-def siconc(request,latitude: str, longitude: str, time:str):
+def siconc(request,image:str,latitude: str, longitude: str, time:str):
     '''
     Es la presión media al nivel del mar
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('sea_ice_cover','(0 - 1)',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('sea_ice_cover','(0 - 1)',latitude,longitude,image,time))
 
-def sst(request,latitude: str, longitude: str, time:str):
+def sst(request,image:str,latitude: str, longitude: str, time:str):
     '''
     Es la temperatura de la superficie del mar
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('sea_surface_temperature','K',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('sea_surface_temperature','K',latitude,longitude,image,time))
 
-def slor(request,latitude: str, longitude: str):
+def slor(request,image:str,latitude: str, longitude: str):
     '''
     Describe la pendiente de la orografía a escala subcuadrícula
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('slope_of_sub_gridscale_orography','no specified',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('slope_of_sub_gridscale_orography','no specified',latitude,longitude,image))
 
-def slt(request,latitude: str, longitude: str):
+def slt(request,image:str,latitude: str, longitude: str):
     '''
     Describe el tipo de suelo
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('soil_type','no specified',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('soil_type','no specified',latitude,longitude,image))
 
-def q(request,latitude: str, longitude: str, time:str, level:str):
+def q(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Indica la humedad específica
     latitude: Arreglo con pares inicio-fin
@@ -341,34 +348,34 @@ def q(request,latitude: str, longitude: str, time:str, level:str):
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('specific_humidity','g / kg',latitude,longitude,time,level))
+    return JsonResponse(GenerarRespuesta('specific_humidity','g / kg',latitude,longitude,image,time,level))
 
-def sdfor(request,latitude: str, longitude: str):
+def sdfor(request,image:str,latitude: str, longitude: str):
     '''
     Describe la desviación estándar de la orografía filtrada a escala subcuadrícula
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_filtered_subgrid_orography','m',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('standard_deviation_of_filtered_subgrid_orography','m',latitude,longitude,image))
 
-def sdor(request,latitude: str, longitude: str):
+def sdor(request,image:str,latitude: str, longitude: str):
     '''
     Indica la desviación estándar de la orografía
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_orography','m',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('standard_deviation_of_orography','m',latitude,longitude,image))
 
-def sp(request,latitude: str, longitude: str, time:str):
+def sp(request,image:str,latitude: str, longitude: str, time:str):
     '''
     La presión en la superficie
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('surface_pressure','Pa',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('surface_pressure','Pa',latitude,longitude,image,time))
 
-def t(request,latitude: str, longitude: str, time:str, level:str):
+def t(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Temperatura
     latitude: Arreglo con pares inicio-fin
@@ -376,43 +383,43 @@ def t(request,latitude: str, longitude: str, time:str, level:str):
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('temperature','K',latitude,longitude,time,level))
+    return JsonResponse(GenerarRespuesta('temperature','K',latitude,longitude,image,time,level))
 
-def tisr(request,latitude: str, longitude: str, time:str):
+def tisr(request,image:str,latitude: str, longitude: str, time:str):
     '''
     La radiación solar incidente en el tope de la atmósfera
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation','J / m**2',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation','J / m**2',latitude,longitude,image,time))
 
-def tcc(request,latitude: str, longitude: str, time:str):
+def tcc(request,image:str,latitude: str, longitude: str, time:str):
     '''
     Describe la cobertura total de nubes
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('total_cloud_cover','(0 - 1)',latitude,longitude,time))
+    return JsonResponse(GenerarRespuesta('total_cloud_cover','(0 - 1)',latitude,longitude,image,time))
 
-def tvh(request,latitude: str, longitude: str):
+def tvh(request,image:str,latitude: str, longitude: str):
     '''
     Describe el tipo de vegetación alta
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('type_of_high_vegetation','no specified',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('type_of_high_vegetation','no specified',latitude,longitude,image))
 
-def tvl(request,latitude: str, longitude: str):
+def tvl(request,image:str,latitude: str, longitude: str):
     '''
     Describe el tipo de vegetación baja
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('type_of_low_vegetation','no specified',latitude,longitude))
+    return JsonResponse(GenerarRespuesta('type_of_low_vegetation','no specified',latitude,longitude,image))
 
-def u(request,latitude: str, longitude: str, time:str, level:str):
+def u(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Es la componente U (este-oeste) del viento
     latitude: Arreglo con pares inicio-fin
@@ -420,9 +427,9 @@ def u(request,latitude: str, longitude: str, time:str, level:str):
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('u_component_of_wind','m / s',latitude,longitude,time,level))
+    return JsonResponse(GenerarRespuesta('u_component_of_wind','m / s',latitude,longitude,image,time,level))
 
-def v(request,latitude: str, longitude: str, time:str, level:str):
+def v(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Es la componente V (norte-sur) del viento
     latitude: Arreglo con pares inicio-fin
@@ -430,13 +437,13 @@ def v(request,latitude: str, longitude: str, time:str, level:str):
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('v_component_of_wind','m / s',latitude,longitude,time,level))
+    return JsonResponse(GenerarRespuesta('v_component_of_wind','m / s',latitude,longitude,image,time,level))
 
-def w(request,latitude: str, longitude: str, time:str, level:str):
+def w(request,image:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Representa la velocidad vertical en la atmósfera
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('vertical_velocity','Pa / s ',latitude,longitude,time,level))
+    return JsonResponse(GenerarRespuesta('vertical_velocity','Pa / s ',latitude,longitude,image,time,level))
