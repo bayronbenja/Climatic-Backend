@@ -20,7 +20,7 @@ def ObtenerGraficoCalor(dataArray):
     buffer.seek(0)
     
     image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
-    
+    print("Consiguiendo gráfico de calor")
     return image_base64
 
 def ObtenerCoord(coord: str):
