@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+import cartopy.crs as ccrs
 import io
 import base64
 import xarray
@@ -12,9 +13,15 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-def ObtenerGraficoCalor(dataArray):
+def ObtenerGraficoCalor(dataset):
     plt.clf()
-    dataArray.plot()
+    plt.figure(figsize=(12,6))
+
+    axis = plt.axes(projection=ccrs.Orthographic())
+    
+    dataset.plot(ax=axis,trasnform=ccrs.PlateCarree())
+    axis.coastlines()
+    
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
     buffer.seek(0)
