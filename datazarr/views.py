@@ -6,6 +6,7 @@ import base64
 import xarray
 import matplotlib.pyplot as plt
 import numpy as np
+from image.creacion_graficos import plot_temperature_with_image
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -15,12 +16,10 @@ era5 = xarray.open_zarr(
 
 def ObtenerGraficoCalor(dataset):
     plt.clf()
-    plt.figure(figsize=(12,6))
-
-    axis = plt.axes(projection=ccrs.Orthographic())
     
-    dataset.plot(ax=axis,trasnform=ccrs.PlateCarree())
-    axis.coastlines()
+    
+    plot_temperature_with_image(dataset)
+    
     
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
@@ -103,6 +102,7 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
             
             return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, ObtenerGraficoCalor(coordChunk) if image else "" ]
     except:
+        
         return "error"
 
 def GenerarJSON(data, units:str):
