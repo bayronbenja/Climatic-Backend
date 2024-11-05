@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     path('info', views.Info),
+    path('wind/<str:image>/<str:latitude>/<str:longitude>/<str:time>', views.wind),
     path('u10/<str:image>/<str:latitude>/<str:longitude>/<str:time>', views.u10),
     path('v10/<str:image>/<str:latitude>/<str:longitude>/<str:time>', views.v10),
     path('t2m/<str:image>/<str:latitude>/<str:longitude>/<str:time>', views.t2m),
