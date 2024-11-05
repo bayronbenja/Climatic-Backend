@@ -4,6 +4,7 @@ import cartopy.feature as cfeature
 import matplotlib.image as mpimg  # Para cargar la imagen
 import xarray
 import os
+import io
 
 print(os.getcwd()+"/image/Mapa_REGION_border-Photoroom.png")
 
@@ -25,6 +26,8 @@ def plot_temperature_with_image(dataset, shading=True):
     - extent: Extensión geográfica de la imagen [min_lon, max_lon, min_lat, max_lat].
     - shading: Booleano para graficar el contorno o no.
     """
+    plt.clf()
+    
     image_path = os.getcwd()+"/image/Mapa_REGION_border-Photoroom.png"  # Reemplaza con la ruta de tu imagen
     image_path_C = os.getcwd()+'/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
     image_path2 = os.getcwd()+'/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
@@ -70,7 +73,11 @@ def plot_temperature_with_image(dataset, shading=True):
 
     # Añadir líneas de la grilla
     gridlines = ax.gridlines(draw_labels=True, linewidth=0.8, color='black', alpha=0.8)
-
-    plt.show()
+    ax.plot()
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png')
+    buffer.seek(0)
+    
+    return buffer
 
 plot_temperature_with_image(era5['2m_temperature'].sel(time='2021-12-31T21:00:00'))

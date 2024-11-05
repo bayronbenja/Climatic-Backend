@@ -15,16 +15,7 @@ era5 = xarray.open_zarr(
 )
 
 def ObtenerGraficoCalor(dataset):
-    plt.clf()
-    
-    
-    plot_temperature_with_image(dataset)
-    
-    
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    
+    buffer = plot_temperature_with_image(dataset)
     image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
     print("Consiguiendo gráfico de calor")
     return image_base64
@@ -209,6 +200,15 @@ def Info(request):
             "Values": level}, 
     }
     return JsonResponse(response)
+
+def wind(request,image:str,latitude: str, longitude: str, time: str):
+    '''
+    Componente U (este-oeste) del viento a 10 metros sobre la superficie
+    latitude: Arreglo con pares inicio-fin
+    longitud: Arreglo con pares inicio-fin
+    time: Fecha inicio a fecha final  
+    '''
+    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','m / s',latitude,longitude,image,time))
 
 def u10(request,image:str,latitude: str, longitude: str, time: str):
     '''
